@@ -40,7 +40,6 @@
 
 #include <ctype.h>
 #include <curses.h>
-#include <limits.h>
 #include <signal.h>
 #include <unistd.h>
 #include "sl.h"
@@ -54,12 +53,9 @@ void option(char *str);
 int my_mvaddstr(int y, int x, char *str);
 
 int ACCIDENT  = 0;
-int C51       = 0;
-int DISCO     = 0;
-int SIGNAL    = 1;
-int FLY       = 0;
 int LOGO      = 0;
-int WIND      = 0;
+int FLY       = 0;
+int C51       = 0;
 int NUMBER    = -1;
 
 int my_mvaddstr(int y, int x, char *str)
@@ -73,18 +69,14 @@ int my_mvaddstr(int y, int x, char *str)
 
 void option(char *str)
 {
-    extern int ACCIDENT, C51, DISCO, SIGNAL, FLY, LOGO, WIND;
+    extern int ACCIDENT, LOGO, FLY, C51;
 
     while (*str != '\0') {
         switch (*str) {
             case 'a': ACCIDENT = 1; break;
-            case 'c': C51      = 1; break;
-            case 'd': DISCO    = 1; break;
-            case 'e': SIGNAL   = 0; break;
             case 'F': FLY      = 1; break;
             case 'l': LOGO     = 1; break;
-            case 'w': WIND     = 200; break;
-            case 'L': WIND     = 380; break;
+            case 'c': C51      = 1; break;
             default:
               if (isdigit(*str))
                   NUMBER = (NUMBER < 0 ? 0 : NUMBER*10) + *str - '0';
@@ -104,14 +96,7 @@ int main(int argc, char *argv[])
         }
     }
     initscr();
-    if (DISCO == 1) {
-        start_color();
-        init_pair(4, COLOR_RED, COLOR_BLACK);
-        init_pair(3, COLOR_YELLOW, COLOR_BLACK);
-        init_pair(2, COLOR_GREEN, COLOR_BLACK);
-        init_pair(1, COLOR_CYAN, COLOR_BLACK);
-    }
-    if (SIGNAL) signal(SIGINT, SIG_IGN);
+    signal(SIGINT, SIG_IGN);
     noecho();
     curs_set(0);
     nodelay(stdscr, TRUE);
@@ -130,14 +115,13 @@ int main(int argc, char *argv[])
         }
         getch();
         refresh();
-        usleep(40000 - (WIND * 100));
+        usleep(40000);
     }
     mvcur(0, COLS - 1, LINES - 1, 0);
     endwin();
 
     return 0;
 }
-
 
 
 int add_sl(int x)
@@ -204,7 +188,8 @@ int add_D51(int x)
     static char *coal[D51HEIGHT + 1]
         = {COAL01, COAL02, COAL03, COAL04, COAL05,
            COAL06, COAL07, COAL08, COAL09, COAL10, COALDEL};
-      if (NUMBER < 0)
+
+    if (NUMBER < 0)
         NUMBER = 1;
 
     int y, i, j, dy = 0;
@@ -218,7 +203,7 @@ int add_D51(int x)
         dy = 1;
     }
     for (i = 0; i <= D51HEIGHT; ++i) {
-      my_mvaddstr(y + i, x, d51[(D51LENGTH + x) % D51PATTERNS][i]);
+        my_mvaddstr(y + i, x, d51[(D51LENGTH + x) % D51PATTERNS][i]);
         for (j = 1; j <= NUMBER; ++j)
             my_mvaddstr(y + i + dy*j, x + 24 + 29*j, coal[i]);
     }
@@ -315,8 +300,6 @@ void add_smoke(int y, int x)
                                  2,  2, 2, 3, 3, 3             };
     int i;
 
-    if (DISCO && (x + INT_MAX/2) % 4 == 2)
-        attron(COLOR_PAIR((x + INT_MAX/2) / 16 % 4 + 1));
     if (x % 4 == 0) {
         for (i = 0; i < sum; ++i) {
             my_mvaddstr(S[i].y, S[i].x, Eraser[S[i].ptrn]);

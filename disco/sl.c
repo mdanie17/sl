@@ -38,7 +38,6 @@
 /* sl version 1.00 : SL runs vomiting out smoke.                             */
 /*                                              by Toyoda Masashi 1992/12/11 */
 
-#include <ctype.h>
 #include <curses.h>
 #include <limits.h>
 #include <signal.h>
@@ -60,7 +59,6 @@ int SIGNAL    = 1;
 int FLY       = 0;
 int LOGO      = 0;
 int WIND      = 0;
-int NUMBER    = -1;
 
 int my_mvaddstr(int y, int x, char *str)
 {
@@ -76,7 +74,7 @@ void option(char *str)
     extern int ACCIDENT, C51, DISCO, SIGNAL, FLY, LOGO, WIND;
 
     while (*str != '\0') {
-        switch (*str) {
+        switch (*str++) {
             case 'a': ACCIDENT = 1; break;
             case 'c': C51      = 1; break;
             case 'd': DISCO    = 1; break;
@@ -84,13 +82,8 @@ void option(char *str)
             case 'F': FLY      = 1; break;
             case 'l': LOGO     = 1; break;
             case 'w': WIND     = 200; break;
-            case 'L': WIND     = 380; break;
-            default:
-              if (isdigit(*str))
-                  NUMBER = (NUMBER < 0 ? 0 : NUMBER*10) + *str - '0';
-              break;
+            default:                break;
         }
-        str++;
     }
 }
 
@@ -139,7 +132,6 @@ int main(int argc, char *argv[])
 }
 
 
-
 int add_sl(int x)
 {
     static char *sl[LOGOPATTERNS][LOGOHEIGHT + 1]
@@ -156,30 +148,25 @@ int add_sl(int x)
     static char *car[LOGOHEIGHT + 1]
         = {LCAR1, LCAR2, LCAR3, LCAR4, LCAR5, LCAR6, DELLN};
 
-    if (NUMBER < 0)
-        NUMBER = 2;
-
-    int i, j, y, py = 0;
-    int LOGOLENGTH = 42 + 21*NUMBER;
+    int i, y, py1 = 0, py2 = 0, py3 = 0;
 
     if (x < - LOGOLENGTH)  return ERR;
     y = LINES / 2 - 3;
 
     if (FLY == 1) {
         y = (x / 6) + LINES - (COLS / 6) - LOGOHEIGHT;
-        py = 2;
+        py1 = 2;  py2 = 4;  py3 = 6;
     }
     for (i = 0; i <= LOGOHEIGHT; ++i) {
         my_mvaddstr(y + i, x, sl[(LOGOLENGTH + x) / 3 % LOGOPATTERNS][i]);
-        my_mvaddstr(y + i + py, x + 21, coal[i]);
-        for (j = 2; j <= NUMBER + 1; ++j)
-            my_mvaddstr(y + i + py*j, x + 21*j, car[i]);
+        my_mvaddstr(y + i + py1, x + 21, coal[i]);
+        my_mvaddstr(y + i + py2, x + 42, car[i]);
+        my_mvaddstr(y + i + py3, x + 63, car[i]);
     }
     if (ACCIDENT == 1) {
         add_man(y + 1, x + 14);
-        for (j = 2; j <= NUMBER + 1; ++j) {
-            add_man(y + 1 + py*j, x + 3 + 21*j);  add_man(y + 1 + py*j, x + 11 + 21*j);
-        }
+        add_man(y + 1 + py2, x + 45);  add_man(y + 1 + py2, x + 53);
+        add_man(y + 1 + py3, x + 66);  add_man(y + 1 + py3, x + 74);
     }
     add_smoke(y - 1, x + LOGOFUNNEL);
     return OK;
@@ -204,11 +191,8 @@ int add_D51(int x)
     static char *coal[D51HEIGHT + 1]
         = {COAL01, COAL02, COAL03, COAL04, COAL05,
            COAL06, COAL07, COAL08, COAL09, COAL10, COALDEL};
-      if (NUMBER < 0)
-        NUMBER = 1;
 
-    int y, i, j, dy = 0;
-    int D51LENGTH = 54 + 29*NUMBER;
+    int y, i, dy = 0;
 
     if (x < - D51LENGTH)  return ERR;
     y = LINES / 2 - 5;
@@ -218,9 +202,8 @@ int add_D51(int x)
         dy = 1;
     }
     for (i = 0; i <= D51HEIGHT; ++i) {
-      my_mvaddstr(y + i, x, d51[(D51LENGTH + x) % D51PATTERNS][i]);
-        for (j = 1; j <= NUMBER; ++j)
-            my_mvaddstr(y + i + dy*j, x + 24 + 29*j, coal[i]);
+        my_mvaddstr(y + i, x, d51[(D51LENGTH + x) % D51PATTERNS][i]);
+        my_mvaddstr(y + i + dy, x + 53, coal[i]);
     }
     if (ACCIDENT == 1) {
         add_man(y + 2, x + 43);
@@ -249,11 +232,7 @@ int add_C51(int x)
         = {COALDEL, COAL01, COAL02, COAL03, COAL04, COAL05,
            COAL06, COAL07, COAL08, COAL09, COAL10, COALDEL};
 
-    if (NUMBER < 0)
-        NUMBER = 1;
-
-    int y, i, j, dy = 0;
-    int C51LENGTH = 58 + 29*NUMBER;
+    int y, i, dy = 0;
 
     if (x < - C51LENGTH)  return ERR;
     y = LINES / 2 - 5;
@@ -264,8 +243,7 @@ int add_C51(int x)
     }
     for (i = 0; i <= C51HEIGHT; ++i) {
         my_mvaddstr(y + i, x, c51[(C51LENGTH + x) % C51PATTERNS][i]);
-        for (j = 1; j <= NUMBER; j++)
-            my_mvaddstr(y + i + dy*j, x + 26 + 29*j, coal[i]);
+        my_mvaddstr(y + i + dy, x + 55, coal[i]);
     }
     if (ACCIDENT == 1) {
         add_man(y + 3, x + 45);
@@ -282,7 +260,7 @@ void add_man(int y, int x)
     int i;
 
     for (i = 0; i < 2; ++i) {
-        my_mvaddstr(y + i, x, man[(42 + 21*NUMBER + x) / 12 % 2][i]);
+        my_mvaddstr(y + i, x, man[(LOGOLENGTH + x) / 12 % 2][i]);
     }
 }
 
